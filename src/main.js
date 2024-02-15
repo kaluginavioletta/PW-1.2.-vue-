@@ -3,18 +3,16 @@ Vue.component('board', {
     <form @submit.prevent="addCardToColumn" style="display: flex; justify-content: center; margin-bottom: 20px; flex-direction: column">
         <input type="text" v-model="newCardTitle" placeholder="Введите задачу">
         <div v-for="(list, listIndex) in newLists" :key="list.id">
-            <input type="text" v-model="list.title" placeholder="Введите название списка">
+        <input type="text" v-model="list.title" placeholder="Введите название списка">
         </div>
-        <button type="submit" @click="addList" :disabled="newLists.length >= maxNumberOfLists">Добавить список</button>
-        <form @submit.prevent="addCardToColumn">
-        <button type="submit" @click="addCardToColumn" :disabled="!canAddCard || !canAddCardWithLists">Добавить карточку</button>
-        </form>
+            <button type="submit" @click="addList" :disabled="newLists.length >= maxNumberOfLists">Добавить список</button>
+            <button type="submit" @click="addCardToColumn" :disabled="!canAddCard || !canAddCardWithLists">Добавить карточку</button>
     </form>
     <div style="display: flex; justify-content: space-around;">
-            <column v-for="column in columns" :column="column" :key="column.id">
-                <card v-for="card in column.cards" :key="card.id" :card="card" :columns="columns"></card>
-            </column>
-        </div>
+        <column v-for="column in columns" :column="column" :key="column.id">
+        <card v-for="card in column.cards" :key="card.id" :card="card" :columns="columns" @check-items="checkItems"></card>
+        </column>
+    </div>
     `,
     data() {
         return {
@@ -34,8 +32,20 @@ Vue.component('board', {
         }
     },
     computed: {
+        addList() {
+            if (this.newListTitle && this.newListTitle.trim() !== '') {
+              const newList = {
+                id: Date.now(),
+                title: this.newListTitle.trim(),
+                items: [{ title: '', checked: false }, { title: '', checked: false }, { title: '', checked: false }],
+              };
+        
+              this.newLists.push(newList);
+              this.newListTitle = '';
+            }
+        },
         canAddCard() {
-            return this.newLists.length >= this.minNumberOfLists;
+            return this.newLists.length <= this.maxNumberOfLists;
         },
         canAddCardWithLists() {
             const allItems = this.newLists.flatMap(list => list.items);
@@ -87,23 +97,21 @@ Vue.component('board', {
             }
         },
         addToList() {
-            this.addList(1, { title: this.newListTitle });
-            this.newListTitle = "";
+            if (this.newListTitle && this.newListTitle.trim() !== '') {
+              const newList = {
+                title: this.newListTitle.trim(),
+                items: [{ title: '', checked: false }, { title: '', checked: false }, { title: '', checked: false }],
+              };
+          
+              this.newLists.push(newList);
+              this.newListTitle = '';
+            }
         },
         addItemToList(listIndex) {
             this.newLists[listIndex].items.push({ title: '', checked: false });
         },
         saveData() {
             localStorage.setItem('columns', JSON.stringify(this.columns)); // сохраняем данные в localStorage
-        },
-        addCardToColumn(columnIndex) {
-            if (this.newCard.title.trim() && this.newCard.items.some(item => item.title.trim())) {
-                const newCard = { ...this.newCard, title: this.newCard.title.trim(), items: this.newCard.items.map(item => ({ ...item, title: item.title.trim() })) };
-                newCard.completedItemsPercentage = this.calculateCompletedItemsPercentage(newCard);
-                this.columns[columnIndex].cards.push(newCard);
-                this.resetNewCard();
-                this.checkColumnLimit(columnIndex);
-            }
         },
         computed: {
             canAddCard() {
@@ -128,6 +136,16 @@ Vue.component('board', {
             }
             this.updateCardCompletionPercentage(card);
         },
+        moveCardToColumn(card, column) {
+            const index = this.columns.findIndex(col => col === card.column);
+            this.columns[index].cards = this.columns[index].cards.filter(c => c !== card);
+            column.cards.push(card);
+            card.column = column;
+        },
+        updateCardCompletionPercentage(card) {
+            const checkedCount = card.items.filter(item => item.checked).length;
+            card.completedItemsPercentage = (checkedCount / card.items.length) * 100;
+        },
     },
     watch: {
         columns: {
@@ -147,9 +165,9 @@ Vue.component('card', {
         },
     },
     template: `
-    <div class="card" style="background-color: cornflowerblue; text-align: center; border: 2px solid #0059ff7d; margin-bottom: 20px;">
+    <div class="card" :style="{ backgroundColor: card.column === 0 ? 'cornflowerblue' : card.column === 1 ? 'lightgreen' : 'lightgray' }">
         <h3>{{ card.title }}</h3>
-        <div v-for="item in card.newLists.items" :key="item.id">
+        <div v-for="item in card.items" :key="item.id">
             <input type="checkbox" v-model="item.checked" @change="checkItems">
             <label :class="{ completed: item.checked }">{{ item.title }}</label>
         </div>
@@ -157,18 +175,16 @@ Vue.component('card', {
     </div>
     `,
     methods: {
-        checkItems() {
-            const checkedCount = this.item.lists.filter(item => item.checked).length;
-            const completionPercentage = (checkedCount / this.items.lists.length) * 100;
-            if (this.card.column === 1 && completionPercentage > 50) {
-                this.$emit('move-to-column', this.card, 2);
-            } else if (this.card.column === 2 && completionPercentage === 100) {
-                this.$emit('move-to-column', this.card, 3);
+        checkItems(card) {
+            const checkedCount = card.items.filter(item => item.checked).length;
+            const completionPercentage = (checkedCount / card.items.length) * 100;
+            if (card.column === 1 && completionPercentage > 50) {
+              this.$emit('move-to-column', card, 2);
+            } else if (card.column === 2 && completionPercentage === 100) {
+              this.$emit('move-to-column', card, 3);
             }
-        },
-        // saveData() {
-        //     localStorage.setItem('columns', JSON.stringify(this.$parent.columns)); // сохраняем данные в localStorage
-        // },
+            this.updateCardCompletionPercentage(card);
+          },
     },
 });
 
