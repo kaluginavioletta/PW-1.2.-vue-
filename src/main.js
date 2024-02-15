@@ -93,11 +93,9 @@ Vue.component('board', {
         addItemToList(listIndex) {
             this.newLists[listIndex].items.push({ title: '', checked: false });
         },
-        // removeList(listIndex) {
-        //     if (this.newLists.length > this.minNumberOfLists) {
-        //         this.newLists.splice(listIndex, 1);
-        //     }
-        // },
+        saveData() {
+            localStorage.setItem('columns', JSON.stringify(this.columns)); // сохраняем данные в localStorage
+        },
         addCardToColumn(columnIndex) {
             if (this.newCard.title.trim() && this.newCard.items.some(item => item.title.trim())) {
                 const newCard = { ...this.newCard, title: this.newCard.title.trim(), items: this.newCard.items.map(item => ({ ...item, title: item.title.trim() })) };
