@@ -7,7 +7,7 @@ Vue.component('board', {
         </div>
         <button type="submit" @click="addList" :disabled="newLists.length >= maxNumberOfLists">Добавить список</button>
         <form @submit.prevent="addCardToColumn">
-        <button type="submit" @click="addCardToColumn" :disabled="!canAddCardWithLists">Добавить карточку</button>        
+        <button type="submit" @click="addCardToColumn" :disabled="!canAddCard || !canAddCardWithLists">Добавить карточку</button>
         </form>
     </form>
     <div style="display: flex; justify-content: space-around;">
@@ -35,7 +35,7 @@ Vue.component('board', {
     },
     computed: {
         canAddCard() {
-            return this.newLists.length >= this.minNumberOfLists && this.newLists.length <= this.maxNumberOfLists;
+            return this.newLists.length >= this.minNumberOfLists;
         },
         canAddCardWithLists() {
             const allItems = this.newLists.flatMap(list => list.items);
@@ -86,14 +86,13 @@ Vue.component('board', {
         //         this.newLists.splice(listIndex, 1);
         //     }
         // },
-        addCardToColumn() {
-            if (this.newCardTitle.trim() !== '') {
-                this.addCard(1, { title: this.newCardTitle, items: [], completed: '', column: 1 });
-                this.newCardTitle = ""; // Clear the input field after adding the card
-            }
-        
-            if (this.columns[0].cards.length >= this.columns[0].maxCards) {
-                alert('The 0% column is full. Please move cards to another column before adding a new one.');
+        addCardToColumn(columnIndex) {
+            if (this.newCard.title.trim() && this.newCard.items.some(item => item.title.trim())) {
+              const newCard = { ...this.newCard };
+              newCard.completedItemsPercentage = this.calculateCompletedItemsPercentage(newCard);
+              this.columns[columnIndex].cards.push(newCard);
+              this.resetNewCard();
+              this.checkColumnLimit(columnIndex);
             }
         },
         computed: {
