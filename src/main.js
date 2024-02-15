@@ -33,6 +33,14 @@ Vue.component('board', {
             minNumberOfLists: 3,
         }
     },
+    // created() {
+    //     window.addEventListener('beforeunload', this.saveData); // сохраняем данные при закрытии страницы
+    // },
+    // mounted() {
+    //     if (!localStorage.getItem('columns')) {
+    //         this.saveData(); // сохраняем данные при первоначальной загрузке страницы
+    //     }
+    // },
     methods: {
         checkNewListTitle() {
             if (this.newListTitle) {
@@ -83,6 +91,16 @@ Vue.component('board', {
                 alert('The 0% column is full. Please move cards to another column before adding a new one.');
             }
         },
+        checkItems(card) {
+            const checkedCount = this.card.items.filter(item => item.checked).length;
+            const completionPercentage = (checkedCount / this.card.items.length) * 100;
+            if (this.card.column === 1 && completionPercentage > 50) {
+                this.$emit('move-to-column', this.card, 2);
+            } else if (this.card.column === 2 && completionPercentage === 100) {
+                this.$emit('move-to-column', this.card, 3);
+            }
+            this.updateCardCompletionPercentage(card);
+        }, 
     },
     watch: {
         columns: {
