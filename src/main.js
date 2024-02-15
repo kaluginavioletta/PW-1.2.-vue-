@@ -33,14 +33,19 @@ Vue.component('board', {
             minNumberOfLists: 3,
         }
     },
-    // created() {
-    //     window.addEventListener('beforeunload', this.saveData); // сохраняем данные при закрытии страницы
-    // },
-    // mounted() {
-    //     if (!localStorage.getItem('columns')) {
-    //         this.saveData(); // сохраняем данные при первоначальной загрузке страницы
-    //     }
-    // },
+    computed: {
+        canAddCard() {
+            return this.newLists.length >= this.minNumberOfLists && this.newLists.length <= this.maxNumberOfLists;
+        },
+        canAddCardWithLists() {
+            const allItems = this.newLists.flatMap(list => list.items);
+            return allItems.filter(item => item.title.trim()).length >= 3;
+        },
+        shouldBlockFirstColumn() {
+            const secondColumnCards = this.columns[1].cards;
+            return secondColumnCards.length === 5 && this.columns[0].cards.some(card => card.completedItemsPercentage > 50);
+        }
+    },
     methods: {
         checkNewListTitle() {
             if (this.newListTitle) {
@@ -91,6 +96,19 @@ Vue.component('board', {
                 alert('The 0% column is full. Please move cards to another column before adding a new one.');
             }
         },
+        computed: {
+            canAddCard() {
+                return this.newLists.length >= this.minNumberOfLists && this.newLists.length <= this.maxNumberOfLists;
+            },
+            canAddCardWithLists() {
+                const allItems = this.newLists.flatMap(list => list.items);
+                return allItems.filter(item => item.title.trim()).length >= 3;
+            },
+            shouldBlockFirstColumn() {
+                const secondColumnCards = this.columns[1].cards;
+                return secondColumnCards.length === 5 && this.columns[0].cards.some(card => card.completedItemsPercentage > 50);
+            }
+        },
         checkItems(card) {
             const checkedCount = this.card.items.filter(item => item.checked).length;
             const completionPercentage = (checkedCount / this.card.items.length) * 100;
@@ -100,7 +118,7 @@ Vue.component('board', {
                 this.$emit('move-to-column', this.card, 3);
             }
             this.updateCardCompletionPercentage(card);
-        }, 
+        },
     },
     watch: {
         columns: {
