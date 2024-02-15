@@ -47,6 +47,12 @@ Vue.component('board', {
         }
     },
     methods: {
+        resetNewCard() {
+            this.newCard = {
+                title: '',
+                items: [{ title: '', checked: false }, { title: '', checked: false }, { title: '', checked: false }]
+            };
+        },
         checkNewListTitle() {
             if (this.newListTitle) {
                 this.$emit('add-list', {
@@ -69,9 +75,15 @@ Vue.component('board', {
             }
         },
         addList() {
-            if (typeof this.newListTitle === 'string' && this.newListTitle.trim() !== '') {
-                this.items.lists.push({ title: this.newListTitle });
-                this.newListTitle = "";
+            if (this.newListTitle && this.newListTitle.trim() !== '') {
+                const newList = {
+                    title: this.newListTitle.trim(),
+                    items: this.newItems.map(item => ({ ...item, title: item.title.trim() })),
+                };
+        
+                this.newLists.push(newList);
+                this.newListTitle = '';
+                this.newItems = [{ title: '', checked: false }, { title: '', checked: false }, { title: '', checked: false }];
             }
         },
         addToList() {
@@ -88,11 +100,11 @@ Vue.component('board', {
         // },
         addCardToColumn(columnIndex) {
             if (this.newCard.title.trim() && this.newCard.items.some(item => item.title.trim())) {
-              const newCard = { ...this.newCard };
-              newCard.completedItemsPercentage = this.calculateCompletedItemsPercentage(newCard);
-              this.columns[columnIndex].cards.push(newCard);
-              this.resetNewCard();
-              this.checkColumnLimit(columnIndex);
+                const newCard = { ...this.newCard, title: this.newCard.title.trim(), items: this.newCard.items.map(item => ({ ...item, title: item.title.trim() })) };
+                newCard.completedItemsPercentage = this.calculateCompletedItemsPercentage(newCard);
+                this.columns[columnIndex].cards.push(newCard);
+                this.resetNewCard();
+                this.checkColumnLimit(columnIndex);
             }
         },
         computed: {
