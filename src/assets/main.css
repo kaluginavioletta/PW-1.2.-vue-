@@ -1,0 +1,15 @@
+body {
+  background-color: #4224de;
+}
+.board {
+  background-color: #7003ff;
+  padding: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-around;
+}
+
+.completed {
+  text-decoration: line-through;
+}
+
