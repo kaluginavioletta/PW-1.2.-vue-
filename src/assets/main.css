@@ -1,15 +1,114 @@
 body {
-  background-color: #4224de;
+  background-color: rgb(101 194 238);
 }
-.board {
-  background-color: #7003ff;
-  padding: 10px;
-  margin-bottom: 10px;
+.notes {
+  display: flex; 
+  justify-content: space-between;
+}
+.note {
+  background-color: #41badb85;
+  border: 2px solid rgb(25 151 230 / 56%);
+  margin-bottom: 20px;
+  height: 90%;
+}
+.column {
+  background-color: rgb(38 185 255);
+  width: 30%;
   display: flex;
-  justify-content: space-around;
+  border: 2px solid rgb(110 187 235);
+  flex-direction: column;
+  color: azure;
+  text-align: center;
+  margin-left: 20px;
 }
-
-.completed {
-  text-decoration: line-through;
+ul {
+  list-style-type: none;
 }
-
+.formNote {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  width: 260px;
+  height: 400px;
+  background-color: #42c0ff8a;
+  align-items: center;
+  text-align: center;
+  border: 2px dashed #87e7f7;
+  box-shadow: -1px 2px 15px rgba(0,0,0,0.5);
+  margin-right: 15px;
+  color: white;
+  margin-top: 80px;
+}
+button {
+  background: #75e1ff;
+  margin-top: 10px;
+  transition: 0.5s;
+  background-size: 200% auto;
+  box-shadow: 0 0 10px #eee;
+  border-radius: 20px;
+  background-image: linear-gradient(to right, #2ec8ef 0%, #0bbbf6 51%, #5d71df 100%);
+}
+button:hover {
+  background-position: right center;
+}
+.buttonedit {
+  background: #00ccff;
+  margin-top: 10px;
+  transition: 0.5s;
+  background-size: 200% auto;
+  box-shadow: 0 0 10px #eee;
+  border-radius: 10px;
+  background-image: linear-gradient(to right, #70bdff 0%, #46e5e9 51%, #195afd 100%);
+}
+.buttonedit :hover {
+  background-position: right center;
+}
+.buttondelete {
+  background: #ff1259;
+  transition: 0.5s;
+  background-size: 200% auto;
+  box-shadow: 0 0 10px #eee;
+  border-radius: 10px;
+  background-image: linear-gradient(to right, #e1404e 0%, #ff0000 51%, #bb1b39 100%);
+}
+.buttondelete :hover {
+  background-position: right center;
+}
+.buttonmove {
+  background: #508eff75;
+  margin-bottom: 10px;
+  transition: 0.5s;
+  background-size: 200% auto;
+  box-shadow: 0 0 10px #eee;
+  border-radius: 10px;
+  background-image: linear-gradient(to right, #009cff 0%, #0261ff 51%, #37a1e6 100%);
+  color: cornsilk;
+}
+.buttonmove :hover {
+  background-position: right center;
+}
+.buttonForm {
+  background: #00afff;
+  color: cornsilk;
+  height: 40px;
+  border-radius: 10px;
+  margin-top: 10px;
+  transition: 0.5s;
+  background-size: 200% auto;
+  box-shadow: 0 0 10px #eee;
+  background-image: linear-gradient(to right, #589cea 0%, #477ede 51%, #01acff 100%);
+}
+.buttonForm:hover {
+  background: #269fd6;
+  background-position: right center;
+}
+.taskoverdue {
+  color: #ff1b1b;
+}
+.taskcompleted {
+  color: #1eff1b;
+}
+.formedit {
+  display: flex;
+  flex-direction: column;
+}

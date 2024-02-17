@@ -1,109 +1,92 @@
+const storageKey = 'new'; // Убедитесь, что ключ соответствует вашему хранилищу
+
+const storageData = localStorage.getItem(storageKey);
+
+const initialData = storageData ? JSON.parse(storageData) : {
+    nullNotes: [],
+    halfNotes: [],
+    doneNotes: [],
+};
+
 new Vue({
     el: '#app',
     data() {
         return {
-            columns: [
-                { id: 1, title: "0%", maxCards: 3, cards: [] },
-                { id: 2, title: "50%", maxCards: 5, cards: [] },
-                { id: 3, title: "100%", maxCards: Infinity, cards: [] }
-            ],
-            lists: [
-                { title: '', checked: false },
-                { title: '', checked: false },
-                { title: '', checked: false },
-            ],
-            newCardTitle: "",
-            newListTitle: "",        
-            maxNumberOfLists: 5,
-            minNumberOfLists: 3,
+            newNote: {
+                title: '',
+            },
+            newList: [
+                { title: '' },
+            ],     
+            nullNotes: initialData.nullNotes,
+            halfNotes: initialData.halfNotes,
+            doneNotes: initialData.doneNotes,
+            editedTask: null,
+            editedTaskIndex: null,
+            editedColumn: null,
+            showForm: false,
         }
     },
     methods: {
-        addMoreInput() {
-            if (this.lists.length < 5) {
-                this.lists.push({ title: this.newListTitle });
-                this.newListTitle = '';
-            } else {
-                alert('Максимальное количество списков достигнуто');
-            }
-        },
-        resetNewCard() {
-            this.newCard = {
+        addNote() {
+            const nullListItems = this.newList.map(() => false);
+            this.nullNotes.push({
+                ...this.newNote,
+                lists: this.newList,
+                nullListItems,
+                createdAt: new Date().toLocaleString(),
+                lastChange: null
+            });
+            this.newNote = {
                 title: '',
-                lists: [{ title: '', checked: false }, { title: '', checked: false }, { title: '', checked: false }]
             };
+            this.newList = [
+                { title: '' }
+            ];
         },
-        checkNewListTitle() {
-            if (this.newListTitle) {
-                this.$emit('add-list', {
-                    title: this.newListTitle,
-                    items: this.newListItems,
-                });
-                this.resetNewLists();
+        toggleForm() {
+            this.showForm = !this.showForm;
+        },
+        addList() {
+            if (this.newList.length < 5) {
+                this.newList.push({ title: '' });
+            } else {
+                alert('Больше 5 списков нельзя!');
             }
         },
-        addCardToColumn() {
-            if (this.newCardTitle.trim() !== '') {
-                const cardLists = this.lists.map(list => ({ title: list.title, checked: false }));
-                this.addCard(1, { title: this.newCardTitle, lists: cardLists, completed: '', column: 1 });
-                this.newCardTitle = ""; // Clear the input field after adding the card
+        addToNullNotes() {
+            if (!this.newNote.title) {
+                alert('Необходимо указать заголовок заметки');
+                return;
+            }
+            if (!this.newNote.title || this.newList.some(listItem => !listItem.title)) {
+                alert('Необходимо заполнить хотя бы 3 списка');
+                return;
+            }
+            if (this.newList.length < 3 || this.newList.length > 5) {
+                alert('Количество списков должно быть в диапазоне от 3 до 5');
+                return;
+            }
+            if (this.nullNotes.length >= 3) {
+                alert('Нельзя добавить более 3-х заметок в первый список');
+                return;
+            }
+            if (this.halfNotes.length >= 5) {
+                alert('Нельзя добавить более 5-ти заметок во второй список');
+                return;
+            }
+            if (this.newNote.title && this.newList.length >= 3 && this.newList.every(listItem => listItem.title)) {
+                const newNoteData = {
+                    title: this.newNote.title,
+                    lists: this.newList.map(listItem => ({ title: listItem.title, done: false })),
+                    nullListItems: this.newList.map(() => false),
+                    createdAt: new Date().toLocaleString(),
+                    lastChange: null
+                };
+                this.nullNotes.push(newNoteData);
+                this.newNote = { title: '' };
+                this.newList = [{ title: '' }];
             }
         },
-        addCard(columnId) {
-            const columnIndex = this.columns.findIndex(column => column.id === columnId);
-            const newCard = { title: this.newCardTitle, lists: this.lists };
-            if (columnIndex !== -1 && this.columns[columnIndex].cards.length < this.columns[columnIndex].maxCards) {
-                newCard.list = this.lists[0];
-                this.columns[columnIndex].cards.push(newCard);
-                this.newCardTitle = '';
-            } else if (columnIndex === 0 && this.columns[columnIndex].cards.length === this.columns[columnIndex].maxCards) {
-                alert('0% column is full');
-            } else if (columnIndex !== 0 && this.columns[columnIndex].cards.length >= this.columns[columnIndex].maxCards) {
-                alert('Column is full, please move cards first.');
-            }
-        },
-        addItemToList(listIndex) {
-            this.newLists[listIndex].items.push({ title: '', checked: false });
-        },
-        saveData() {
-            localStorage.setItem('columns', JSON.stringify(this.columns)); // сохраняем данные в localStorage
-        },
-        moveCardToColumn(card, column) {
-            const index = this.columns.findIndex(col => col === card.column);
-            this.columns[index].cards = this.columns[index].cards.filter(c => c !== card);
-            column.cards.push(card);
-            card.column = column;
-        },
-        updateCardCompletionPercentage(card) {
-            const firstListItemsFilled = this.lists[0].items.some(item => item.title.trim().length === 0);
-            const newCardTitleFilled = this.newCardTitle.trim().length > 0;
-            return !firstListItemsFilled && newCardTitleFilled;
-        },
-        checkItems(index) {
-            const checkedCount = this.lists.filter(item => item.checked).length;
-            const completionPercentage = (checkedCount / this.lists.length) * 100;
-            if (this.card.column === 1 && completionPercentage > 50) {
-                this.$emit('move-to-column', this.card, 2);
-            } else if (this.card.column === 2 && completionPercentage === 100) {
-                this.$emit('move-to-column', this.card, 3);
-            }
-            this.$emit('update-lists', this.lists); // Emit event to update lists in the parent component
-        },
-    },
-    computed: {
-        canAddCard() {
-          return this.newCardTitle.trim() !== '' && this.lists.some(list => list.title.trim() !== '');
-        },
-        canAddList() {
-          return this.newListTitle.trim() !== '';
-        },
-    },
-    watch: {
-        columns: {
-            handler(newColumns) {
-                localStorage.setItem('trello-board', JSON.stringify(newColumns));
-            },
-            deep: true
-        }
     }
 });

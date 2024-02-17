@@ -1,41 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Task</title>
-  <link rel="stylesheet" href="src/assets/main.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="src/assets/main.css">
+    <title>Task</title>
 </head>
 <body>
-  <div id="app">
-    <div>
-      <form @submit.prevent.stop="addCardToColumn" style="display: flex; justify-content: center; margin-bottom: 20px; flex-direction: column">        
-        <input type="text" v-model="newCardTitle" placeholder="Введите задачу">
-            <div v-for="(list, index) in lists" :key="index">
-                <input type="text" v-model="list.title" placeholder="Введите название списка">
-                <input v-if="index === this.lists.length - 1" type="text" v-model="newListTitle" placeholder="Введите название списка">
+<div id="app" class="notes">
+  <div class="formNote" v-if="showForm">
+        <form @submit.prevent="addNote">
+            <h2>Форма добавления заметки</h2>
+            <label for="title">Заголовок заметки:</label>
+            <input id="title" type="text" v-model="newNote.title">
+            <div v-for="(listItem, index) in newList" :key="index">
+                <label for="listItemTitle">Список {{ index + 1 }}:</label>
+                <input id="listItemTitle" type="text" v-model="newList[index].title">
             </div>
-                <button @click.prevent.stop="addMoreInput">Добавить ещё</button>
-                <button type="submit" @submit.prevent="addCardToColumn">Добавить карточку</button>
+            <button type="button" @click="addList">Добавить список</button>
+            <button type="button" @click="addToNullNotes">Добавить заметку</button>
         </form>
-        <div style="display: flex; justify-content: space-around;">
-            <column v-for="column in columns" :column="column" :key="column.id">
-            <card v-for="card in column.cards" :key="card.id" :card="card" :columns="columns" @check-items="checkItems"></card>
-            </column>
-        </div>
+    </div>
+    <button @click="toggleForm" class="buttonForm">{{ showForm ? 'Убрать форму' : 'Создать Задачу' }}</button>   
 
-        <div class="card" style="background-color: cornflowerblue; text-align: center;">
-          <h3>{{ card.title }}</h3>
-          <div v-for="(list, index) in lists" :key="index">
-              <input type="checkbox" v-model="list.checked" @change="checkItems(index)">
-              <label>{{ list.title }}</label>
+    <div class="column">
+        <h2>0%</h2>
+        <div v-for="(note, index) in nullNotes" :key="index">
+          <div class="note">
+              <h3>{{ note.title }}</h3>
+              <ul>
+                  <li v-for="(listItem, index) in note.lists" :key="index">
+                    <input type="checkbox" :id="'listItem' + index" :value="listItem.title" v-model="note.nullListItems[index]">
+                    <label :for="'listItem' + index">{{ listItem.title }}</label>
+                  </li>
+              </ul>
+              <button class="delete-button" @click="removeTask(index)">Удалить</button>
           </div>
-
       </div>
     </div>
-  </div>
-  <script defer src="src/main.js"></script>
 
+    <div class="column">
+        <h2>50%</h2>
+
+    </div>
+
+    <div class="column">
+        <h2>100%</h2>
+    </div>
+
+</div>
   <script defer src="src/vue.js"></script>
+  <script defer src="src/main.js"></script>
 </body>
 </html>
