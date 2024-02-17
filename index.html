@@ -8,10 +8,34 @@
 </head>
 <body>
   <div id="app">
-    <board></board>
+    <div>
+      <form @submit.prevent.stop="addCardToColumn" style="display: flex; justify-content: center; margin-bottom: 20px; flex-direction: column">        
+        <input type="text" v-model="newCardTitle" placeholder="Введите задачу">
+            <div v-for="(list, index) in lists" :key="index">
+                <input type="text" v-model="list.title" placeholder="Введите название списка">
+                <input v-if="index === this.lists.length - 1" type="text" v-model="newListTitle" placeholder="Введите название списка">
+            </div>
+                <button @click.prevent.stop="addMoreInput">Добавить ещё</button>
+                <button type="submit" @submit.prevent="addCardToColumn">Добавить карточку</button>
+        </form>
+        <div style="display: flex; justify-content: space-around;">
+            <column v-for="column in columns" :column="column" :key="column.id">
+            <card v-for="card in column.cards" :key="card.id" :card="card" :columns="columns" @check-items="checkItems"></card>
+            </column>
+        </div>
+
+        <div class="card" style="background-color: cornflowerblue; text-align: center;">
+          <h3>{{ card.title }}</h3>
+          <div v-for="(list, index) in lists" :key="index">
+              <input type="checkbox" v-model="list.checked" @change="checkItems(index)">
+              <label>{{ list.title }}</label>
+          </div>
+
+      </div>
+    </div>
   </div>
   <script defer src="src/main.js"></script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.18/vue.min.js"></script>
+  <script defer src="src/vue.js"></script>
 </body>
 </html>
