@@ -24,28 +24,48 @@
     <button @click="toggleForm" class="buttonForm">{{ showForm ? 'Убрать форму' : 'Создать Задачу' }}</button>   
 
     <div class="column">
-        <h2>0%</h2>
-        <div v-for="(note, index) in nullNotes" :key="index">
-          <div class="note">
-              <h3>{{ note.title }}</h3>
-              <ul>
-                  <li v-for="(listItem, index) in note.lists" :key="index">
-                    <input type="checkbox" :id="'listItem' + index" :value="listItem.title" v-model="note.nullListItems[index]">
-                    <label :for="'listItem' + index">{{ listItem.title }}</label>
-                  </li>
-              </ul>
-              <button class="delete-button" @click="removeTask(index)">Удалить</button>
-          </div>
+      <h2>0%</h2>
+      <div v-for="(note, index) in nullNotes" :key="index">
+        <div class="note">
+          <h3>{{ note.title }}</h3>
+          <ul>
+            <li v-for="(listItem, listIndex) in note.lists" :key="listIndex">
+              <input type="checkbox" :value="Number(listItem.title)" v-model.number="note.doneListItems[listIndex]" @change="autoMoveNote(index, 'nullNotes')">
+              <label :for="'listItem' + index + '_' + listIndex">{{ listItem.title }}</label>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
-
+    
     <div class="column">
-        <h2>50%</h2>
-
+      <h2>50%</h2>
+      <div v-for="(note, index) in halfNotes" :key="index">
+        <div class="note">
+          <h3>{{ note.title }}</h3>
+          <ul>
+            <li v-for="(listItem, listIndex) in note.lists" :key="listIndex">
+              <input type="checkbox" :value="Number(listItem.title)" v-model.number="note.doneListItems[listIndex]" @change="autoMoveNote(index, 'halfNotes')">
+              <label :for="'listItem' + index + '_' + listIndex">{{ listItem.title }}</label>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
-
+    
     <div class="column">
-        <h2>100%</h2>
+      <h2>100%</h2>
+      <div v-for="(note, index) in doneNotes" :key="index">
+        <div class="note">
+          <h3>{{ note.title }}</h3>
+          <ul>
+            <li v-for="(listItem, index) in note.lists" :key="index">
+              <input type="checkbox" :value="listItem.title" v-model="note.doneListItems[index]" :disabled="true">
+              <label :for="'listItem' + index">{{ listItem.title }}</label>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
 
 </div>
