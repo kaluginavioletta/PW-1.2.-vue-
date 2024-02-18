@@ -27,12 +27,18 @@ new Vue({
             showForm: false,
             isColumnBlocked: false,
             doneNotesWithLastDoneAt: [],
+            halfNotesBlocked: false,
         }
     },
     created() {
         this.loadData();
     },
     methods: {
+        blockHalfNotesColumn() {
+            if (this.halfNotes.length >= 5 && !this.doneNotes.length) {
+                this.halfNotesBlocked = true;
+            }
+        },
         loadData() {
             this.nullNotes = JSON.parse(localStorage.getItem(`${storageKey}NullNotes`)) || [];
             this.halfNotes = JSON.parse(localStorage.getItem(`${storageKey}HalfNotes`)) || [];
@@ -71,26 +77,34 @@ new Vue({
             }
         },
         addToNullNotes() {
+            const anyNullNoteOver50Percent = this.nullNotes.some(note => {
+                const percentageDone = (note.doneListItems.filter(item => item).length / note.lists.length) * 100;
+                return percentageDone > 50;
+              });
+            
+            if (anyNullNoteOver50Percent) {
+                this.nullNotesBlocked = true;
+            }            
             if (!this.newNote.title) {
                 alert('Необходимо указать заголовок заметки');
                 return;
             }
+        
             if (!this.newNote.title || this.newList.some(listItem => !listItem.title)) {
                 alert('Поля для списков не должны быть пустыми');
                 return;
             }
+        
             if (this.newList.length < 3 || this.newList.length > 5) {
                 alert('Количество списков должно быть в диапазоне от 3 до 5');
                 return;
             }
+        
             if (this.nullNotes.length >= 3) {
                 alert('Нельзя добавить более 3-х заметок в первый столбец');
                 return;
             }
-            // if (this.halfNotes.length >= 5) {
-            //     alert('Нельзя добавить более 5-ти заметок во второй столбец');
-            //     return;
-            // }
+        
             if (this.newNote.title && this.newList.length >= 3 && this.newList.every(listItem => listItem.title)) {
                 const newNoteData = {
                     title: this.newNote.title,
@@ -137,36 +151,59 @@ new Vue({
                 this.doneNotes.splice(noteIndex, 1)[0];
               }
             } else if (percentageDone >= 50 && column === 'nullNotes') {
-              this.halfNotes.push(this.nullNotes.splice(noteIndex, 1)[0]);
-              this.halfNotes[this.halfNotes.length - 1].lastDoneAt = null;
+                if (this.halfNotes.length < 5) {
+                    this.halfNotes.push(this.nullNotes.splice(noteIndex, 1)[0]);
+                    this.halfNotes[this.halfNotes.length - 1].lastDoneAt = null;
+                } else {
+                    
+                    alert('Нельзя добавить более 5-ти заметок во второй столбец');
+                    this.nullNotesBlocked = true;
+                    return;
+                }
             } else if (percentageDone < 50) {
               if (column === 'halfNotes') {
                 this.nullNotes.push(this.halfNotes.splice(noteIndex, 1)[0]);
                 this.nullNotes[this.nullNotes.length - 1].lastDoneAt = null;
               }
-            }
+            }        
+            if (column === 'halfNotes' && this.nullNotesBlocked) {
+                const anyHalfNoteComplete = this.halfNotes.some(note => note.doneListItems.every(item => item));
+                if (anyHalfNoteComplete) {
+                  this.nullNotesBlocked = false;
+                }
+             }
+              
           
             this.checkDoneNotes();
             this.saveData();
+            if (column === 'doneNotes') {
+                if (this.halfNotes.length < 5 && this.doneNotesWithLastDoneAt.length) {
+                    this.halfNotesBlocked = false;
+                } else if (this.halfNotes.length === 5 && !this.doneNotes.length) {
+                    this.blockHalfNotesColumn();
+                }
+            }
+        },
+        moveAndBlock() {
+            if (this.halfNotes.some(note => note.doneListItems.length === note.lists.length)) {
+                // Если любая карточка в halfNotes полностью выполнена
+                this.isColumnBlocked = false;
+            } else if (this.nullNotes.some(note => (note.doneListItems.length / note.lists.length) * 100 >= 50)) {
+                // Если какая-то карточка в nullNotes достигла 50% выполнения
+                this.isColumnBlocked = true; // блокируем редактирование первого столбца
+                this.editedColumn = "first"; // Указываем, что первый столбец должен быть заблокирован
+            } else if (this.halfNotes.length < 5 && this.isColumnBlocked === false) {
+                this.halfNotes.push(this.nullNotes.pop());
+            }
         },
         checkDoneNotes() {
             const doneNote = initialData.doneNotes.find(note => note.doneListItems.filter(Boolean).length === note.lists.length);
             if (doneNote) {
-              this.doneNotesWithLastDoneAt.push(doneNote);
-              initialData.doneNotes = initialData.doneNotes.filter(note => note !== doneNote);
+                this.doneNotesWithLastDoneAt.push(doneNote);
+                initialData.doneNotes = initialData.doneNotes.filter(note => note !== doneNote);
+                this.moveAndBlock();
             }
-        },
-        moveAndBlock(index) {
-            if (this.halfNotes.length >= 5 && this.nullNotes[index].percentageDone >= 50) {
-                this.isColumnBlocked = true;
-                // блокируем редактирование первого столбца
-                this.editedTask = null;
-                this.editedTaskIndex = null;
-                this.editedColumn = null;
-            } else {
-                this.halfNotes.push(this.nullNotes.splice(index, 1)[0]);
-            }
-        },
+        },        
         unlockColumn() {
             this.isColumnBlocked = false;
             // разблокируйте редактирование первого столбца

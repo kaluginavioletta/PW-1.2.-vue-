@@ -1,21 +1,21 @@
 body {
-  background-color: rgb(101 194 238);
+	background: linear-gradient(81deg, #c833d9d9, #6c50ccf7);
 }
 .notes {
   display: flex; 
   justify-content: space-between;
 }
 .note {
-  background-color: #41badb85;
-  border: 2px solid rgb(25 151 230 / 56%);
-  margin-bottom: 20px;
-  height: 90%;
+    background: linear-gradient(135deg, #cf33c5 0%, #5f84e4 100%);
+    border: 2px solid rgb(124 50 174 / 67%);
+    margin-bottom: 20px;
+    height: 90%;
 }
 .column {
-  background-color: rgb(38 185 255);
+  background: linear-gradient(90deg, #785cee, #ba5ee4, #c356af);
   width: 30%;
   display: flex;
-  border: 2px solid rgb(110 187 235);
+  border: 2px solid #c53fe2e6;
   flex-direction: column;
   color: azure;
   text-align: center;
@@ -26,27 +26,61 @@ ul {
 }
 .formNote {
   display: flex;
-  justify-content: center;
-  flex-direction: column;
-  width: 260px;
-  height: 400px;
-  background-color: #42c0ff8a;
-  align-items: center;
-  text-align: center;
-  border: 2px dashed #87e7f7;
-  box-shadow: -1px 2px 15px rgba(0,0,0,0.5);
-  margin-right: 15px;
-  color: white;
-  margin-top: 80px;
+    justify-content: center;
+    flex-direction: column;
+    width: 260px;
+    height: 400px;
+    background: linear-gradient(41deg, #f558f8, #195afd94);
+    align-items: center;
+    text-align: center;
+    border: 2px dashed #e1404e;
+    box-shadow: -1px 2px 15px rgba(0,0,0,0.5);
+    margin-right: 15px;
+    color: white;
+    margin-top: 80px;
+}
+.checkbox-animated {
+  display: inline-block;
+  background-color: #ccc;
+  position: relative;
+  cursor: pointer;
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+.checkbox-animated:checked {
+  background-color: #178de7;
+  transform: scale(1.2);
+}
+
+.checkbox-animated:checked::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.45);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #e25bed;
+  box-shadow: 0 0 0 0px #1b47bf;
+  transition: box-shadow 0.3s;
+}
+
+.checkbox-animated:checked::before {
+  box-shadow: 0 0 0 10px #3f9fe8;
 }
 button {
-  background: #75e1ff;
   margin-top: 10px;
   transition: 0.5s;
   background-size: 200% auto;
   box-shadow: 0 0 10px #eee;
   border-radius: 20px;
-  background-image: linear-gradient(to right, #2ec8ef 0%, #0bbbf6 51%, #5d71df 100%);
+  background-image: linear-gradient(to right, #cd40ff 0%, #00bfff 51%, #3043ab 100%);
+  border: bisque;
+  color: beige;
 }
 button:hover {
   background-position: right center;
@@ -88,18 +122,19 @@ button:hover {
   background-position: right center;
 }
 .buttonForm {
-  background: #00afff;
-  color: cornsilk;
-  height: 40px;
-  border-radius: 10px;
-  margin-top: 10px;
-  transition: 0.5s;
-  background-size: 200% auto;
-  box-shadow: 0 0 10px #eee;
-  background-image: linear-gradient(to right, #589cea 0%, #477ede 51%, #01acff 100%);
+    background: linear-gradient(81deg, #486acc, #c709c7);
+    color: cornsilk;
+    height: 40px;
+    border-radius: 10px;
+    margin-top: 10px;
+    transition: 0.5s;
+    background-size: 200% auto;
+    box-shadow: 0 0 10px #eee;
+    background-image: linear-gradient(135deg, #d659ce 0%, #5fc3e4 100%);
+    border: bisque;
 }
 .buttonForm:hover {
-  background: #269fd6;
+  background: linear-gradient(81deg, #785cee, #ba5ee4);
   background-position: right center;
 }
 .taskoverdue {

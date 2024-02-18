@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="src/assets/main.css">
+    <link type="image/x-icon" rel="icon" href="./src/img/pinboard_icon_130856.ico">
     <title>Task</title>
 </head>
 <body>
@@ -30,12 +31,10 @@
               <h3>{{ note.title }}</h3>
               <ul>
                   <li v-for="(listItem, listIndex) in note.lists" :key="listIndex">
-                      <input type="checkbox" :value="Number(listItem.title)" v-model.number="note.doneListItems[listIndex]" @change="autoMoveNote(index, 'nullNotes')" :disabled="isColumnBlocked">
+                      <input type="checkbox" id="checkbox" class="checkbox-animated" :value="Number(listItem.title)" v-model.number="note.doneListItems[listIndex]" @change="autoMoveNote(index, 'nullNotes')" :disabled="isColumnBlocked">
                       <label :for="'listItem' + index + '_' + listIndex">{{ listItem.title }}</label>
                   </li>
               </ul>
-              <button @click="editNote(index, 'nullNotes')" :disabled="isColumnBlocked">Редактировать</button>
-              <button @click="deleteNote(index, 'nullNotes')" :disabled="isColumnBlocked">Удалить</button>
           </div>
       </div>
   </div>
@@ -47,12 +46,10 @@
               <h3>{{ note.title }}</h3>
               <ul>
                   <li v-for="(listItem, listIndex) in note.lists" :key="listIndex">
-                      <input type="checkbox" :value="Number(listItem.title)" v-model.number="note.doneListItems[listIndex]" @change="autoMoveNote(index, 'halfNotes')">
+                      <input type="checkbox" class="checkbox-animated"  :value="Number(listItem.title)" v-model.number="note.doneListItems[listIndex]" @change="autoMoveNote(index, 'halfNotes')">
                       <label :for="'listItem' + index + '_' + listIndex">{{ listItem.title }}</label>
                   </li>
               </ul>
-              <button @click="editNote(index, 'halfNotes')">Редактировать</button>
-              <button @click="deleteNote(index, 'halfNotes')">Удалить</button>
           </div>
       </div>
   </div>
