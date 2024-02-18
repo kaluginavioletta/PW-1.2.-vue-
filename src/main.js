@@ -29,18 +29,21 @@ new Vue({
             doneNotesWithLastDoneAt: [],
         }
     },
+    created() {
+        this.loadData();
+    },
     methods: {
+        loadData() {
+            this.nullNotes = JSON.parse(localStorage.getItem(`${storageKey}NullNotes`)) || [];
+            this.halfNotes = JSON.parse(localStorage.getItem(`${storageKey}HalfNotes`)) || [];
+            this.doneNotes = JSON.parse(localStorage.getItem(`${storageKey}DoneNotes`)) || [];
+        },
         saveData() {
-            localStorage.setItem('nullNotes', JSON.stringify(this.nullNotes));
-            localStorage.setItem('halfNotes', JSON.stringify(this.halfNotes));
-            localStorage.setItem('doneNotes', JSON.stringify(this.doneNotes));
+            localStorage.setItem(`${storageKey}NullNotes`, JSON.stringify(this.nullNotes));
+            localStorage.setItem(`${storageKey}HalfNotes`, JSON.stringify(this.halfNotes));
+            localStorage.setItem(`${storageKey}DoneNotes`, JSON.stringify(this.doneNotes));
             this.checkDoneNotes();
         },
-        // loadData() {
-        //     this.nullNotes = JSON.parse(localStorage.getItem('nullNotes')) || [];
-        //     this.halfNotes = JSON.parse(localStorage.getItem('halfNotes')) || [];
-        //     this.doneNotes = JSON.parse(localStorage.getItem('doneNotes')) || [];
-        // },
         addNote() {
             const doneListItems = this.newList.map(() => false);
             this.nullNotes.push({
@@ -104,47 +107,48 @@ new Vue({
         autoMoveNote(noteIndex, column) {
             let note;
             if (column === 'nullNotes') {
-                note = this.nullNotesWithDoneCount[noteIndex];
+              note = this.nullNotesWithDoneCount[noteIndex];
             } else if (column === 'halfNotes') {
-                note = this.halfNotesWithDoneCount[noteIndex];
+              note = this.halfNotesWithDoneCount[noteIndex];
             } else if (column === 'doneNotes') {
-                note = this.doneNotes[noteIndex];
+              note = this.doneNotes[noteIndex];
             } else {
-                return;
+              return;
             }
-        
+          
             if (!note) {
-                return;
+              return;
             }
-        
+          
             const percentageDone = (note.doneListItemsCount / note.lists.length) * 100;
-        
+          
             if (percentageDone === 100) {
-                if (column === 'nullNotes') {
-                    this.doneNotes.push(this.nullNotes.splice(noteIndex, 1)[0]);
-                    this.doneNotes[this.doneNotes.length - 1].lastDoneAt = new Date().toLocaleString();
-                } else if (column === 'halfNotes') {
-                    this.doneNotes.push(this.halfNotes.splice(noteIndex, 1)[0]);
-                    this.doneNotes[this.doneNotes.length - 1].lastDoneAt = new Date().toLocaleString();
-                } else if (column === 'doneNotes') {
-                    // Перемещение обратно из doneNotes
-                    this.doneNotes.splice(noteIndex, 1)[0];
+              if (column === 'nullNotes') {
+                // Check if there will be more than three notes in the first column
+                if (this.nullNotes.length < 3) {
+                  this.doneNotes.push(this.nullNotes.splice(noteIndex, 1)[0]);
+                  this.doneNotes[this.doneNotes.length - 1].lastDoneAt = new Date().toLocaleString();
                 }
+              } else if (column === 'halfNotes') {
+                this.doneNotes.push(this.halfNotes.splice(noteIndex, 1)[0]);
+                this.doneNotes[this.doneNotes.length - 1].lastDoneAt = new Date().toLocaleString();
+              } else if (column === 'doneNotes') {
+                // Перемещение обратно из doneNotes
+                this.doneNotes.splice(noteIndex, 1)[0];
+              }
             } else if (percentageDone >= 50 && column === 'nullNotes') {
-                this.halfNotes.push(this.nullNotes.splice(noteIndex, 1)[0]);
-                this.halfNotes[this.halfNotes.length - 1].lastDoneAt = null;
+              this.halfNotes.push(this.nullNotes.splice(noteIndex, 1)[0]);
+              this.halfNotes[this.halfNotes.length - 1].lastDoneAt = null;
             } else if (percentageDone < 50) {
-                if (column === 'halfNotes') {
-                    this.nullNotes.push(this.halfNotes.splice(noteIndex, 1)[0]);
-                    this.nullNotes[this.nullNotes.length - 1].lastDoneAt = null;
-                }
+              if (column === 'halfNotes') {
+                this.nullNotes.push(this.halfNotes.splice(noteIndex, 1)[0]);
+                this.nullNotes[this.nullNotes.length - 1].lastDoneAt = null;
+              }
             }
-        
+          
             this.checkDoneNotes();
             this.saveData();
         },
-        
-        
         checkDoneNotes() {
             const doneNote = this.doneNotes.find(note => note.doneListItems.filter(Boolean).length === note.lists.length);
             if (doneNote) {
@@ -201,6 +205,8 @@ new Vue({
             }).length;
         },    
     },
+
+
     watch: {
         nullNotesWatcher: {
             deep: true,
@@ -210,25 +216,22 @@ new Vue({
                 });
             }
         },
-        handler(newVal, oldVal) {
-            newVal.forEach((count, index) => {
-              this.autoMoveNote(index, 'halfNotes');
-            });
+        progressTasksWatcher: {
+            deep: true,
+            handler(newVal, oldVal) {
+                newVal.forEach((count, index) => {
+                    this.autoMoveNote(index, 'halfNotes');
+                });
+            }
         },
         nullNotes: {
-            handler(newNullNotes) {
+            handler(newPlannedTasks) {
                 this.saveData();
             },
             deep: true
         },
         halfNotes: {
-            handler(newhalfNotes) {
-                this.saveData();
-            },
-            deep: true
-        },
-        doneNotes: {
-            handler(doneNotes) {
+            handler(newProgressTasks) {
                 this.saveData();
             },
             deep: true
@@ -240,6 +243,6 @@ new Vue({
                 }
             },
             immediate: true
-        }    
+        }  
     },
-});
+},);
