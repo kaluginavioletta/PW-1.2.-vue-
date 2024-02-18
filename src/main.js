@@ -150,10 +150,10 @@ new Vue({
             this.saveData();
         },
         checkDoneNotes() {
-            const doneNote = this.doneNotes.find(note => note.doneListItems.filter(Boolean).length === note.lists.length);
+            const doneNote = initialData.doneNotes.find(note => note.doneListItems.filter(Boolean).length === note.lists.length);
             if (doneNote) {
-                this.doneNotesWithLastDoneAt.push(doneNote);
-                this.doneNotes = this.doneNotes.filter(note => note !== doneNote);
+              this.doneNotesWithLastDoneAt.push(doneNote);
+              initialData.doneNotes = initialData.doneNotes.filter(note => note !== doneNote);
             }
         },
         moveAndBlock(index) {
