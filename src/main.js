@@ -53,15 +53,20 @@ new Vue({
     methods: {
         blockFirstColumn() {
             const halfNotesWithMoreThan50Percent = this.nullNotes.some(note => (note.doneListItems.length / note.lists.length) * 100 > 50);
-            const halfNotesWithoutFullyDone = !this.halfNotes.some(note => note.doneListItems.length === note.lists.length);
-            if (!this.nullNotes || !this.halfNotes || !this.doneNotes) {
+            if (!this.halfNotes || !this.nullNotes) {
                 return;
             }
-          
-            if (this.halfNotes.length === 5 && halfNotesWithMoreThan50Percent && halfNotesWithoutFullyDone) {
-              this.isColumnBlocked = true;
+            if (this.halfNotes.length === 5 && halfNotesWithMoreThan50Percent) {
+                // If the second column has reached its maximum capacity and has a card with more than 50% completion, move the first card from the first column that has more than 50% completion to the second column
+                const eligibleNote = this.nullNotes.find(note => (note.doneListItems.length / note.lists.length) * 100 > 50);
+                if (eligibleNote) {
+                    this.halfNotes.push(this.nullNotes.splice(this.nullNotes.indexOf(eligibleNote), 1)[0]);
+                    this.editedTask = null;
+                    this.editedTaskIndex = null;
+                    this.editedColumn = null;
+                }
             } else {
-              this.isColumnBlocked = false;
+                this.isColumnBlocked = this.halfNotes.length === 5 && halfNotesWithMoreThan50Percent;
             }
         },
         // blockHalfNotesColumn() {
@@ -126,6 +131,9 @@ new Vue({
             }
         },
         autoMoveNote(noteIndex, column) {
+            if (this.isColumnBlocked && column === 'nulled') {
+                return;
+            }
             const note = column === 'nulled' ? this.nullNotes[noteIndex] : this.halfNotes[noteIndex];
             if (note === undefined) {
                 return;
@@ -141,6 +149,10 @@ new Vue({
                     this.doneNotes.push(this.halfNotes.splice(noteIndex, 1)[0]);
                     note.lastDoneAt = new Date().toLocaleString();
                 }
+                // Reset isColumnBlocked when a card in the second column moves to the third column
+                if (column === 'halfNotes') {
+                    this.isColumnBlocked = false;
+                }
             } 
             else if (percentageDone >= 50) {
                 if (column === 'nulled') {
@@ -150,6 +162,7 @@ new Vue({
                         this.editedTask = null;
                         this.editedTaskIndex = null;
                         this.editedColumn = null;
+                        this.isColumnBlocked = true;
                     }
                     else{
                         this.halfNotes.push(this.nullNotes.splice(noteIndex, 1)[0]);
@@ -211,8 +224,7 @@ new Vue({
         },       
         unlockColumn() {
             this.isColumnBlocked = false;
-            // разблокируйте редактирование первого столбца
-        },    
+        },   
         autoMoveNoteAndBlock(index, column) {
             if (this.halfNotes.length >= 5 && this.nullNotes[index].percentageDone >= 50) {
                 this.isColumnBlocked = true;
@@ -237,7 +249,11 @@ new Vue({
             return this.halfNotes.map((note, index) => {
                 const totalListItemsCount = note.lists.length;
                 const doneListItemsCount = note.doneListItems.filter(Boolean).length;
-                return (doneListItemsCount / totalListItemsCount) * 100;
+                const percentageDone = (doneListItemsCount / totalListItemsCount) * 100;
+                if (percentageDone === 100) {
+                    this.unlockColumn();
+                }
+                return percentageDone;
             });
         },
         percentageDone() {
@@ -279,7 +295,9 @@ new Vue({
             deep: true,
             handler(newVal, oldVal) {
                 newVal.forEach((count, index) => {
-                    this.autoMoveNote(index, 'halfNotes');
+                    if (!this.isColumnBlocked) {
+                        this.autoMoveNote(index, 'halfNotes');
+                    }
                 });
             }
         },
