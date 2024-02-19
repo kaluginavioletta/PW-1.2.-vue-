@@ -70,15 +70,15 @@ new Vue({
         //     }
         // },
         loadData() {
-            this.nullNotes = JSON.parse(localStorage.getItem(`${storageKey}NullNotes`) || '[]');
-            this.halfNotes = JSON.parse(localStorage.getItem(`${storageKey}HalfNotes`) || '[]');
-            this.doneNotes = JSON.parse(localStorage.getItem(`${storageKey}DoneNotes`) || '[]');
-        
-            // Add lastDoneAt property to doneNotes if it doesn't exist
-            this.doneNotes = this.doneNotes.map(note => ({ ...note, lastDoneAt: note.hasOwnProperty('lastDoneAt') ? note.lastDoneAt : new Date().toLocaleString() }));
-        
-            // Add this line to update doneNotesWithLastDoneAt
-            this.doneNotesWithLastDoneAt = this.doneNotes.map(note => ({ ...note, lastDoneAt: new Date().toLocaleString() }));
+            this.nullNotes = JSON.parse(localStorage.getItem(`${storageKey}NullNotes`)) || [];
+            this.halfNotes = JSON.parse(localStorage.getItem(`${storageKey}HalfNotes`)) || [];
+            this.doneNotes = JSON.parse(localStorage.getItem(`${storageKey}DoneNotes`)) || [];
+        },
+        saveData() {
+            localStorage.setItem(`${storageKey}NullNotes`, JSON.stringify(this.nullNotes));
+            localStorage.setItem(`${storageKey}HalfNotes`, JSON.stringify(this.halfNotes));
+            localStorage.setItem(`${storageKey}DoneNotes`, JSON.stringify(this.doneNotes));
+            this.checkDoneNotes();
         },
         addNote() {
             if (!this.newNote.title.trim()) {
@@ -202,14 +202,13 @@ new Vue({
         //         this.halfNotes.push(this.nullNotes.pop());
         //     }
         // },
-        // checkDoneNotes() {
-        //     const doneNote = this.doneNotes.find(note => note.doneListItems.filter(Boolean).length === note.lists.length);
-        //     if (doneNote) {
-        //       this.doneNotesWithLastDoneAt.push(doneNote);
-        //       this.doneNotes = this.doneNotes.filter(note => note !== doneNote);
-        //       this.moveAndBlock();
-        //     }
-        // },        
+        checkDoneNotes() {
+            const doneNote = initialData.doneNotes.find(note => note.doneListItems.filter(Boolean).length === note.lists.length);
+            if (doneNote) {
+              this.doneNotesWithLastDoneAt.push(doneNote);
+              initialData.doneNotes = initialData.doneNotes.filter(note => note !== doneNote);
+            }
+        },       
         unlockColumn() {
             this.isColumnBlocked = false;
             // разблокируйте редактирование первого столбца
@@ -224,14 +223,6 @@ new Vue({
             } else {
                 this.autoMoveNote(index, column);
             }
-        },
-        saveData() {
-            const data = {
-                nullNotes: this.nullNotes,
-                halfNotes: this.halfNotes,
-                doneNotes: this.doneNotes
-            };
-            localStorage.setItem(storageKey, JSON.stringify(data));
         },        
     },
     computed: {
