@@ -8,6 +8,10 @@ const initialData = storageData ? JSON.parse(storageData) : {
     doneNotes: [],
 };
 
+function getUniqueId(prefix) {
+    return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+}
+
 initialData.doneNotes = initialData.doneNotes.map(note => ({ ...note, lastDoneAt: null }));
 
 new Vue({
@@ -18,7 +22,7 @@ new Vue({
                 title: '',
             },
             newList: [
-                { title: '' },
+                { title: '', id: getUniqueId('newListItem') },
             ],     
             nullNotes: initialData.nullNotes,
             halfNotes: initialData.halfNotes,
@@ -29,19 +33,30 @@ new Vue({
             showForm: false,
             isColumnBlocked: false,
             doneNotesWithLastDoneAt: [],
-            halfNotesBlocked: false,
+            // halfNotesBlocked: false,
         }
+    },
+    beforeMount() {
+        this.loadData();
+        this.saveData(); // save initial data
+        this.$nextTick(() => {
+          this.blockFirstColumn();
+        });
     },
     created() {
         this.loadData();
+        this.saveData(); // save initial data
         this.$nextTick(() => {
-            this.blockFirstColumn();
+          this.blockFirstColumn();
         });
     },
     methods: {
         blockFirstColumn() {
             const halfNotesWithMoreThan50Percent = this.nullNotes.some(note => (note.doneListItems.length / note.lists.length) * 100 > 50);
             const halfNotesWithoutFullyDone = !this.halfNotes.some(note => note.doneListItems.length === note.lists.length);
+            if (!this.nullNotes || !this.halfNotes || !this.doneNotes) {
+                return;
+            }
           
             if (this.halfNotes.length === 5 && halfNotesWithMoreThan50Percent && halfNotesWithoutFullyDone) {
               this.isColumnBlocked = true;
@@ -49,38 +64,57 @@ new Vue({
               this.isColumnBlocked = false;
             }
         },
-        blockHalfNotesColumn() {
-            if (this.halfNotes.length >= 5 && !this.doneNotes.length) {
-                this.halfNotesBlocked = true;
-            }
-        },
+        // blockHalfNotesColumn() {
+        //     if (this.halfNotes.length >= 5 && !this.doneNotes.length) {
+        //         this.halfNotesBlocked = true;
+        //     }
+        // },
         loadData() {
-            this.nullNotes = JSON.parse(localStorage.getItem(`${storageKey}NullNotes`)) || [];
-            this.halfNotes = JSON.parse(localStorage.getItem(`${storageKey}HalfNotes`)) || [];
-            this.doneNotes = JSON.parse(localStorage.getItem(`${storageKey}DoneNotes`)) || [];
-        },
-        saveData() {
-            localStorage.setItem(`${storageKey}NullNotes`, JSON.stringify(this.nullNotes));
-            localStorage.setItem(`${storageKey}HalfNotes`, JSON.stringify(this.halfNotes));
-            localStorage.setItem(`${storageKey}DoneNotes`, JSON.stringify(this.doneNotes));
-            this.checkDoneNotes();
+            this.nullNotes = JSON.parse(localStorage.getItem(`${storageKey}NullNotes`) || '[]');
+            this.halfNotes = JSON.parse(localStorage.getItem(`${storageKey}HalfNotes`) || '[]');
+            this.doneNotes = JSON.parse(localStorage.getItem(`${storageKey}DoneNotes`) || '[]');
+        
+            // Add lastDoneAt property to doneNotes if it doesn't exist
+            this.doneNotes = this.doneNotes.map(note => ({ ...note, lastDoneAt: note.hasOwnProperty('lastDoneAt') ? note.lastDoneAt : new Date().toLocaleString() }));
+        
+            // Add this line to update doneNotesWithLastDoneAt
+            this.doneNotesWithLastDoneAt = this.doneNotes.map(note => ({ ...note, lastDoneAt: new Date().toLocaleString() }));
         },
         addNote() {
-            const doneListItems = this.newList.map(() => false);
-            this.nullNotes.push({
-                ...this.newNote,
-                lists: this.newList,
-                doneListItems,
+            if (!this.newNote.title.trim()) {
+                alert('Необходимо указать заголовок заметки');
+                return;
+            }            
+        
+            if (this.newList.some(listItem => !listItem.title)) {
+                alert('Поля для списков не должны быть пустыми');
+                return;
+            }
+        
+            if (this.newList.length !== 3 && this.newList.length !== 4 && this.newList.length !== 5) {
+                alert('Количество списков должно быть ровно 3, 4 или 5');
+                return;
+            }
+        
+            if (this.nullNotes.length >= 3) {
+                alert('Нельзя добавить более 3-х заметок в первый столбец');
+                return;
+            }
+        
+            const newNoteData = {
+                title: this.newNote.title,
+                lists: this.newList.map(listItem => ({ title: listItem.title, done: false })),
+                doneListItems: this.newList.map(() => false),
                 createdAt: new Date().toLocaleString(),
                 lastChange: null
-            });
-            this.newNote = {
-                title: '',
             };
-            this.newList = [
-                { title: '' }
-            ];
-        },
+        
+            this.nullNotes.push(newNoteData);
+            this.newNote = { title: '' };
+            this.newList.forEach((listItem) => {
+                listItem.title = '';
+            });
+        },        
         toggleForm() {
             this.showForm = !this.showForm;
         },
@@ -91,206 +125,234 @@ new Vue({
                 alert('Больше 5 списков нельзя!');
             }
         },
-        addToNullNotes() {
-            const anyNullNoteOver50Percent = this.nullNotes.some(note => {
-              const percentageDone = (note.doneListItems.filter(item => item).length / note.lists.length) * 100;
-              return percentageDone > 50;
-            });
-          
-            if (anyNullNoteOver50Percent) {
-              this.nullNotesBlocked = true;
-            }
-          
-            if (!this.newNote.title) {
-              alert('Необходимо указать заголовок заметки');
-              return;
-            }
-          
-            if (!this.newNote.title || this.newList.some(listItem => !listItem.title)) {
-              alert('Поля для списков не должны быть пустыми');
-              return;
-            }
-          
-            if (this.newList.length < 3 || this.newList.length > 5) {
-              alert('Количество списков должно быть в диапазоне от 3 до 5');
-              return;
-            }
-          
-            if (this.nullNotes.length >= 3) {
-              alert('Нельзя добавить более 3-х заметок в первый столбец');
-              return;
-            }
-          
-            if (this.newNote.title && this.newList.length >= 3 && this.newList.every(listItem => listItem.title)) {
-              const newNoteData = {
-                title: this.newNote.title,
-                lists: this.newList.map(listItem => ({ title: listItem.title, done: false })),
-                doneListItems: this.newList.map(listItem => listItem.done),
-                createdAt: new Date().toLocaleString(),
-                lastChange: null,
-                lastDoneAt: null // Add this line
-              };
-              this.nullNotes.push(newNoteData);
-              this.newNote = { title: '' };
-              this.newList = [{ title: '', done: false }];
-            }
-        },
         autoMoveNote(noteIndex, column) {
-            let note;
-            if (column === 'nullNotes') {
-              note = this.nullNotesWithDoneCount[noteIndex];
-              const percentageDone = (note.doneListItems.filter(Boolean).length / note.lists.length) * 100;
-          
-              if (percentageDone > 50) {
-                const doneNote = { ...note };
-                doneNote.lastDoneAt = new Date().toLocaleString(); // Add this line
-                this.halfNotes.push(doneNote);
-                this.nullNotes.splice(noteIndex, 1);
-              }
-            } else if (column === 'halfNotes') {
-              note = this.halfNotesWithDoneCount[noteIndex];
-              const percentageDone = (note.doneListItems.filter(Boolean).length / note.lists.length) * 100;
-          
-              if (percentageDone === 100) {
-                const doneNote = { ...note };
-                doneNote.lastDoneAt = new Date().toLocaleString(); // Add this line
-                this.doneNotes.push(doneNote);
-                this.halfNotes.splice(noteIndex, 1);
-                this.isColumnBlocked = false;
-              }
-            } else if (column === 'doneNotes') {
-              note = this.doneNotes[noteIndex];
-              this.isColumnBlocked = false;
-            } else {
-              return;
+            const note = column === 'nulled' ? this.nullNotes[noteIndex] : this.halfNotes[noteIndex];
+            if (note === undefined) {
+                return;
             }
-          
-            this.blockFirstColumn();
-            this.checkDoneNotes();
-            this.saveData();
-        },        
-        moveAndBlock() {
-            if (this.doneNotesWithLastDoneAt.length >= 1) {
-                this.isColumnBlocked = true;
-                // блокируем редактирование первого столбца
-                this.editedNote = null;
-                this.editedNoteIndex = null;
-                this.editedColumn = null;
+            const DoneListItemsCount = note.doneListItems.filter(Boolean).length;
+            const totalListItemsCount = note.lists.length;
+            const percentageDone = (DoneListItemsCount / totalListItemsCount) * 100;
+            if (percentageDone === 100) {
+                if (column === 'nullNotes') {
+                    this.doneNotes.push(this.nullNotes.splice(noteIndex, 1)[0]);
+                    note.lastDoneAt = new Date().toLocaleString();
+                } else {
+                    this.doneNotes.push(this.halfNotes.splice(noteIndex, 1)[0]);
+                    note.lastDoneAt = new Date().toLocaleString();
+                }
+            } 
+            else if (percentageDone >= 50) {
+                if (column === 'nulled') {
+                    if (this.halfNotes.length >= 5){
+                        alert('Нельзя добавить более 5-ти карточек во второй список');
+                        // Блокируем редактирование первого столбца
+                        this.editedTask = null;
+                        this.editedTaskIndex = null;
+                        this.editedColumn = null;
+                    }
+                    else{
+                        this.halfNotes.push(this.nullNotes.splice(noteIndex, 1)[0]);
+                        // Проверяем, если удаляется карточка из первого столбца и он содержит задачи с процентом выполнения >= 50
+                        if (this.nullNotes.some(note => note.percentageDone >= 50)) {
+                            this.halfNotes.unshift(this.nullNotes.shift()); // Переносим первую задачу из первого столбца во второй
+                            // Блокируем редактирование первого столбца
+                            this.editedTask = null;
+                            this.editedTaskIndex = null;
+                            this.editedColumn = null;
+                        }
+                    }
+                }
             }
-        },
-        checkDoneNotes() {
-            const doneNote = this.doneNotes.find(note => note.doneListItems.filter(Boolean).length === note.lists.length);
-            if (doneNote) {
-              this.doneNotesWithLastDoneAt.push(doneNote);
-              this.doneNotes = this.doneNotes.filter(note => note !== doneNote);
-              this.moveAndBlock();
+
+
+            else if (percentageDone < 50) {
+                if (column === 'halfNotes') {
+                    if (this.nullNotes.length < 3) {
+                        this.nullNotes.push(this.halfNotes.splice(noteIndex, 1)[0]);
+                    }
+                    else {
+                        alert("В 1 столбце уже есть 3 карточки");
+                    }
+                }
             }
-        },     
+            if (column === 'halfNotes' && this.nullNotesBlocked) {
+                const anyHalfNoteComplete = this.halfNotes.some(note => note.doneListItems.every(item => item));
+                if (anyHalfNoteComplete) {
+                  this.nullNotesBlocked = false;
+                }
+             }
+            if (column === 'doneNotes') {
+                if (this.halfNotes.length < 5 && this.doneNotesWithLastDoneAt.length) {
+                    this.halfNotesBlocked = false;
+                } else if (this.halfNotes.length === 5 && !this.doneNotes.length) {
+                    this.blockHalfNotesColumn();
+                }
+            }
+        },  
+        // moveAndBlock() {
+        //     if (this.halfNotes.some(note => note.doneListItems.length === note.lists.length)) {
+        //         // Если любая карточка в halfNotes полностью выполнена
+        //         this.isColumnBlocked = false;
+        //     } else if (this.nullNotes.some(note => (note.doneListItems.length / note.lists.length) * 100 >= 50)) {
+        //         // Если какая-то карточка в nullNotes достигла 50% выполнения
+        //         this.isColumnBlocked = true; // блокируем редактирование первого столбца
+        //         this.editedColumn = "first"; // Указываем, что первый столбец должен быть заблокирован
+        //     } else if (this.halfNotes.length < 5 && this.isColumnBlocked === false) {
+        //         this.halfNotes.push(this.nullNotes.pop());
+        //     }
+        // },
+        // checkDoneNotes() {
+        //     const doneNote = this.doneNotes.find(note => note.doneListItems.filter(Boolean).length === note.lists.length);
+        //     if (doneNote) {
+        //       this.doneNotesWithLastDoneAt.push(doneNote);
+        //       this.doneNotes = this.doneNotes.filter(note => note !== doneNote);
+        //       this.moveAndBlock();
+        //     }
+        // },        
         unlockColumn() {
             this.isColumnBlocked = false;
             // разблокируйте редактирование первого столбца
         },    
         autoMoveNoteAndBlock(index, column) {
-            const targetColumn = column === 'halfNotes' ? 'doneNotes' : 'halfNotes';
-            const completedPercentage = column === 'nullNotes' ? 50 : 100;
-        
-            if (this[targetColumn].length >= 5 && this.nullNotes.some(note => note.percentageDone >= completedPercentage)) {
+            if (this.halfNotes.length >= 5 && this.nullNotes[index].percentageDone >= 50) {
                 this.isColumnBlocked = true;
+                // блокируем редактирование первого столбца
                 this.editedNote = null;
                 this.editedNoteIndex = null;
                 this.editedColumn = null;
             } else {
-                this.autoMoveNote(index, column, completedPercentage);
-        
-                // проверяем, все ли задачи в столбце отмечены как выполненные
-                const allNotesDone = this[column].every(note => note.percentageDone === 100);
-                if (allNotesDone) {
-                    this.unlockColumn();
-                }
+                this.autoMoveNote(index, column);
             }
         },
+        saveData() {
+            const data = {
+                nullNotes: this.nullNotes,
+                halfNotes: this.halfNotes,
+                doneNotes: this.doneNotes
+            };
+            localStorage.setItem(storageKey, JSON.stringify(data));
+        },        
     },
     computed: {
         nullNotesWithDoneCount() {
             return this.nullNotes.map((note, index) => {
+                const totalListItemsCount = note.lists.length;
                 const doneListItemsCount = note.doneListItems.filter(Boolean).length;
-                return { ...note, doneListItemsCount, index };
+                return (doneListItemsCount / totalListItemsCount) * 100;
             });
         },
         halfNotesWithDoneCount() {
             return this.halfNotes.map((note, index) => {
-                const doneListItemsCount = note.doneListItems.filter(Boolean).length;
-                return { ...note, doneListItemsCount, index };
-            });
-        },
-        doneHalfNotesCount() {
-            return this.halfNotes.filter(note => {
-                const doneListItemsCount = note.doneListItems.filter(Boolean).length;
                 const totalListItemsCount = note.lists.length;
-                const percentageDone = (doneListItemsCount / totalListItemsCount) * 100;
-                return percentageDone === 100;
-            }).length;
-        }, 
-        doneNotesWithLastDoneAt() {
-            return this.doneNotes.map(note => {
-              if (note.doneListItems.filter(Boolean).length === note.lists.length) {
-                return { ...note, lastDoneAt: new Date().toLocaleString() };
-              }
-              return note;
+                const doneListItemsCount = note.doneListItems.filter(Boolean).length;
+                return (doneListItemsCount / totalListItemsCount) * 100;
             });
         },
+        percentageDone() {
+            return (noteIndex, listIndex) => {
+              const note = this.nullNotes[noteIndex] || this.halfNotes[noteIndex];
+              if (note) {
+                const totalListItemsCount = note.lists.length;
+                const doneListItemsCount = note.doneListItems.filter(Boolean).length;
+                return (doneListItemsCount / totalListItemsCount) * 100;
+              }
+              return 0;
+            }
+        },
+        // doneHalfNotesCount() {
+        //     return this.halfNotes.filter(note => {
+        //         const doneListItemsCount = note.doneListItems.filter(Boolean).length;
+        //         const totalListItemsCount = note.lists.length;
+        //         const percentageDone = (doneListItemsCount / totalListItemsCount) * 100;
+        //         return percentageDone === 100;
+        //     }).length;
+        // }, 
+        doneNotesWithLastDoneAtComputed() {
+            return this.doneNotes.map(note => {
+                return { ...note, lastDoneAt: new Date().toLocaleString() };
+            });
+        },       
     },
 
-
     watch: {
-        'nullNotesWithDoneCount.length': {
-            handler() {
-                this.blockFirstColumn();
+        nullNotesWithDoneCount: {
+            deep: true,
+            handler(newVal, oldVal) {
+                newVal.forEach((count, index) => {
+                    this.autoMoveNote(index, 'nulled');
+                });
             }
         },
-        'nullNotesWithDoneCount.1': {
+        halfNotesWithDoneCount: {
+            deep: true,
             handler(newVal, oldVal) {
-              if (newVal.percentageDone === 100) {
-                const doneNote = { ...this.nullNotesWithDoneCount[1], lastDoneAt: new Date().toLocaleString() };
-                this.doneNotes.push(doneNote);
-                this.halfNotes.splice(1, 1);
-                this.isColumnBlocked = false;
-              }
-            },
-            deep: true
-        },
-        'halfNotesWithDoneCount.length': {
-            handler() {
-                this.blockHalfNotesColumn();
+                newVal.forEach((count, index) => {
+                    this.autoMoveNote(index, 'halfNotes');
+                });
             }
-        },
-        'halfNotesWithDoneCount.4': {
-            handler(newVal, oldVal) {
-                if (newVal.percentageDone === 100) {
-                    this.autoMoveNote(0, 'doneNotes');
-                }
-            },
-            deep: true
         },
         nullNotes: {
-            handler(newPlannedTasks) {
+            deep: true,
+            handler() {
                 this.saveData();
-            },
-            deep: true
+            }
         },
         halfNotes: {
-            handler(newProgressTasks) {
+            deep: true,
+            handler() {
                 this.saveData();
+            }
+        },
+        doneNotes: {
+            handler(newVal) {
+                this.doneNotesWithLastDoneAtComputed = newVal.map(note => {
+                    return { ...note, lastDoneAt: new Date().toLocaleString() };
+                });
             },
             deep: true
         },
-        doneHalfNotesCount: {
-            handler(newCount) {
-                if (newCount > 0 && this.isColumnBlocked) {
-                    this.unlockColumn();
-                }
-            },
-            immediate: true
-        }
+        // 'nullNotesWithDoneCount.length': {
+        //     handler() {
+        //         this.blockFirstColumn();
+        //     }
+        // },
+        // 'nullNotesWithDoneCount.1': {
+        //     handler(newVal, oldVal) {
+        //         if (newVal.percentageDone === 100) {
+        //             const doneNote = this.doneNotes.find(note => note.id === newVal.id);
+        //             if (doneNote) {
+        //                 doneNote.lastDoneAt = new Date().toLocaleString(); // Update lastDoneAt for existing doneNote
+        //             } else {
+        //                 const newDoneNote = { ...newVal, lastDoneAt: new Date().toLocaleString() };
+        //                 this.doneNotes.push(newDoneNote); // Add new doneNote to doneNotes array
+        //             }
+        //             this.halfNotes.splice(1, 1);
+        //             this.isColumnBlocked = false;
+        //         }
+        //     },
+        //     deep: true
+        // },        
+        // 'halfNotesWithDoneCount.length': {
+        //     handler() {
+        //         this.blockHalfNotesColumn();
+        //     }
+        // },
+        // 'halfNotesWithDoneCount.4': {
+        //     handler(newVal, oldVal) {
+        //         if (newVal.percentageDone === 100) {
+        //             const doneNote = this.doneNotes.find(note => note.id === newVal.id);
+        //             if (doneNote) {
+        //                 doneNote.lastDoneAt = new Date().toLocaleString(); // Update lastDoneAt for existing doneNote
+        //             } else {
+        //                 const newDoneNote = { ...newVal, lastDoneAt: new Date().toLocaleString() };
+        //                 this.doneNotes.push(newDoneNote); // Add new doneNote to doneNotes array
+        //             }
+        //             this.halfNotes = this.halfNotes.filter(note => note.id !== newVal.id); // Удаление заметки из halfNotes
+        //             this.isColumnBlocked = false;
+        //         }
+        //     },
+        //     deep: true
+        // },              
     },
 },);

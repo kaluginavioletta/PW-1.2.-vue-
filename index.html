@@ -19,45 +19,45 @@
                 <input id="listItemTitle" type="text" v-model="newList[index].title">
             </div>
             <button type="button" @click="addList">Добавить список</button>
-            <button type="button" @click="addToNullNotes">Добавить заметку</button>
+            <button type="submit">Добавить заметку</button>
         </form>
     </div>
     <button @click="toggleForm" class="buttonForm">{{ showForm ? 'Убрать форму' : 'Создать Задачу' }}</button>   
 
     <div class="column">
       <h2>0%</h2>
-      <div v-for="(note, index) in nullNotes" :key="index">
-          <div class="note">
-              <h3>{{ note.title }}</h3>
-              <ul>
-                  <li v-for="(listItem, listIndex) in note.lists" :key="listIndex">
-                      <input type="checkbox" id="checkbox" class="checkbox-animated" :value="Number(listItem.title)" v-model.number="note.doneListItems[listIndex]" @change="autoMoveNote(index, 'nullNotes')" :disabled="isColumnBlocked">
-                      <label :for="'listItem' + index + '_' + listIndex">{{ listItem.title }}</label>
-                  </li>
-              </ul>
-          </div>
+      <div v-for="(note, noteIndex) in nullNotes" :key="noteIndex">
+        <div class="note">
+          <h3>{{ note.title }}</h3>
+          <ul>
+            <li v-for="(listItem, listIndex) in note.lists" :key="listIndex">
+              <input type="checkbox" class="checkbox-animated" :value="Number(listItem.title)" v-model.number="note.doneListItems[listIndex]" @change="autoMoveNote(noteIndex, 'nullNotes')" :disabled="isColumnBlocked || percentageDone(noteIndex, listIndex) >= 50">
+              <label :for="'listItem' + noteIndex + '_' + listIndex">{{ listItem.title }}</label>
+            </li>
+          </ul>
+        </div>
       </div>
   </div>
   
   <div class="column">
       <h2>50%</h2>
-      <div v-for="(note, index) in halfNotes" :key="index">
-          <div class="note">
-              <h3>{{ note.title }}</h3>
-              <ul>
-                  <li v-for="(listItem, listIndex) in note.lists" :key="listIndex">
-                      <input type="checkbox" class="checkbox-animated"  :value="Number(listItem.title)" v-model.number="note.doneListItems[listIndex]" @change="autoMoveNote(index, 'halfNotes')">
-                      <label :for="'listItem' + index + '_' + listIndex">{{ listItem.title }}</label>
-                  </li>
-              </ul>
-          </div>
+      <div v-for="(note, noteIndex) in halfNotes" :key="noteIndex">
+        <div class="note">
+          <h3>{{ note.title }}</h3>
+          <ul>
+            <li v-for="(listItem, listIndex) in note.lists" :key="listIndex">
+              <input type="checkbox" class="checkbox-animated" :value="Number(listItem.title)" v-model.number="note.doneListItems[listIndex]" @change="autoMoveNote(noteIndex, 'halfNotes')" :disabled="percentageDone(noteIndex, listIndex) === 100">
+              <label :for="'listItem' + noteIndex + '_' + listIndex">{{ listItem.title }}</label>
+            </li>
+          </ul>
+        </div>
       </div>
   </div>
   
   <div class="column">
     <h2>100%</h2>
-    <div v-for="(doneNote, index) in doneNotesWithLastDoneAt" :key="index">
-        <div class="note">
+    <div v-for="(doneNote, index) in doneNotes" :key="index">
+      <div class="note">
         <h3>{{ doneNote.title }}</h3>
         <ul>
           <li v-for="(listItem, listIndex) in doneNote.lists" :key="listIndex">
@@ -66,17 +66,6 @@
           </li>
         </ul>
         <p>Последнее обновление: {{ doneNote.lastDoneAt }}</p>
-      </div>
-    </div>
-    <div v-for="(note, index) in doneNotes" :key="`${index}-done`">
-      <div class="note">
-        <h3>{{ note.title }}</h3>
-        <ul>
-          <li v-for="(listItem, listIndex) in note.lists" :key="listIndex">
-            <input type="checkbox" :value="listItem.title" v-model="note.doneListItems[listIndex]" :disabled="true">
-            <label :for="'listItem' + index">{{ listItem.title }}</label>
-          </li>
-        </ul>
       </div>
     </div>
   </div>
