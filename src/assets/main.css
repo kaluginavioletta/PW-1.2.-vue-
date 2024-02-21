@@ -147,3 +147,13 @@ button:hover {
   display: flex;
   flex-direction: column;
 }
+.btn_done {
+  margin-top: 10px;
+  transition: 0.5s;
+  background-size: 200% auto;
+  box-shadow: 0 0 10px #eee;
+  border-radius: 20px;
+  background-image: linear-gradient(to right, #ff4052 0%, #7a41c7 51%, #3657c1 100%);
+  border: bisque;
+  color: beige;
+}
